@@ -1,30 +1,59 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hello World 페이지</title>
+    <title>Web SSH Client</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            margin-top: 50px;
-        }
-        button {
-            padding: 10px 20px;
-            font-size: 16px;
-            cursor: pointer;
-        }
+        body { font-family: Arial, sans-serif; text-align: center; margin-top: 20px; }
+        #output { width: 80%; height: 300px; border: 1px solid #333; padding: 10px; overflow-y: auto; background: #000; color: #0f0; white-space: pre-wrap; }
+        input, button { margin-top: 10px; padding: 8px; font-size: 16px; }
     </style>
 </head>
 <body>
-    <h1>Hello, World!</h1>
-    <p>이 버튼을 눌러보세요:</p>
-    <button onclick="sayHello()">Click me</button>
+    <h1>Web SSH Client</h1>
+    <input id="host" placeholder="SSH Host" />
+    <input id="port" placeholder="Port" value="22" />
+    <input id="username" placeholder="Username" />
+    <input id="password" placeholder="Password" type="password" />
+    <button onclick="connectSSH()">Connect</button>
+    <div id="output"></div>
+    <input id="command" placeholder="Enter command" disabled />
+    <button onclick="sendCommand()" disabled>Send Command</button>
 
     <script>
-        function sayHello() {
-            alert("안녕하세요!");
+        let socket;
+
+        function connectSSH() {
+            const host = document.getElementById('host').value;
+            const port = document.getElementById('port').value;
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            socket = new WebSocket(`wss://your-webssh-server-address`);
+
+            socket.onopen = () => {
+                document.getElementById('output').textContent = 'Connected to SSH server\n';
+                socket.send(JSON.stringify({ host, port, username, password }));
+                document.getElementById('command').disabled = false;
+                document.querySelector('button[onclick="sendCommand()"]').disabled = false;
+            };
+
+            socket.onmessage = (event) => {
+                document.getElementById('output').textContent += event.data + '\n';
+            };
+
+            socket.onclose = () => {
+                document.getElementById('output').textContent += 'Disconnected from SSH server\n';
+                document.getElementById('command').disabled = true;
+                document.querySelector('button[onclick="sendCommand()"]').disabled = true;
+            };
+        }
+
+        function sendCommand() {
+            const command = document.getElementById('command').value + '\n';
+            socket.send(JSON.stringify({ command }));
+            document.getElementById('command').value = '';
         }
     </script>
 </body>
